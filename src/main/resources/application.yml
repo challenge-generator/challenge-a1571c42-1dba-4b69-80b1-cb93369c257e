@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: optimizacionia
+  datasource:
+    url: jdbc:postgresql://localhost:5432/optimizacionia
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 20000ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      analyticsService:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+  retry:
+    instances:
+      analyticsService:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  bulkhead:
+    instances:
+      analyticsService:
+        maxConcurrentCalls: 20
+        maxWaitDuration: 10ms
+
+application:
+  thread-pool:
+    core-size: 10
+    max-size: 50
+    queue-capacity: 100
+  latency-threshold: 200
